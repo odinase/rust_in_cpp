@@ -10,8 +10,8 @@ include_directories(
     include
 )
 
-set(CMAKE_INSTALL_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/../target/debug")
-LINK_DIRECTORIES("${CMAKE_CURRENT_SOURCE_DIR}/../target/debug")
+set(CMAKE_INSTALL_RPATH "${CMAKE_CURRENT_SOURCE_DIR}/target/debug")
+link_directories("${CMAKE_CURRENT_SOURCE_DIR}/target/debug")
 
 add_executable(hello
     hello.cpp

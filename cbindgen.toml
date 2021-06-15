@@ -1,0 +1,5 @@
+include_guard = "RUST_INTERFACE_H"
+namespace = "rust_interface"
+
+[struct]
+derive_constructor = true
