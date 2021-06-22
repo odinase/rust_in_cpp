@@ -14,6 +14,21 @@ enum class Testy {
   Stop,
 };
 
+struct ArrayFlipper {
+  double *data;
+  uintptr_t len;
+  uintptr_t cap;
+
+  ArrayFlipper(double *const& data,
+               uintptr_t const& len,
+               uintptr_t const& cap)
+    : data(data),
+      len(len),
+      cap(cap)
+  {}
+
+};
+
 struct Test {
   uint32_t t;
   uint32_t a;
@@ -36,6 +51,12 @@ struct Test2 {
 };
 
 extern "C" {
+
+void flip(ArrayFlipper *self);
+
+void square(ArrayFlipper *self);
+
+void double_length(ArrayFlipper *self);
 
 void hello(Test *self);
 

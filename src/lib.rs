@@ -1,7 +1,49 @@
+#![feature(vec_into_raw_parts)]
+
+use std::ptr;
+
 #[repr(C)]
 pub struct Test {
     pub t: u32,
     pub a: u32,
+}
+
+#[repr(C)]
+pub struct ArrayFlipper {
+    pub data: *mut f64,
+    pub len: usize,
+    pub cap: usize,
+}
+
+impl ArrayFlipper {
+    pub fn new() -> Self {
+        ArrayFlipper {
+            data: ptr::null_mut(),
+            len: 0,
+            cap: 0,
+        }
+    }
+    
+    #[no_mangle]
+    pub extern "C" fn flip(&mut self) {
+        let s = unsafe { std::slice::from_raw_parts_mut(self.data, self.len) };
+        s.reverse();
+    }
+
+    #[no_mangle]
+    pub extern "C" fn square(&mut self) {
+        let s = unsafe { std::slice::from_raw_parts_mut(self.data, self.len) };
+        for ss in s {
+            *ss = (*ss)*(*ss);
+        }
+    }
+
+    #[no_mangle]
+    pub extern "C" fn double_length(&mut self) {
+        let s = unsafe { Vec::from_raw_parts(self.data, self.len, self.cap) };
+        let s: Vec<_> = s.iter().chain(s.iter()).collect();
+        let _ = s.into_raw_parts();
+    }
 }
 
 #[repr(C)]
@@ -47,4 +89,5 @@ mod cpp_interface {
     pub extern "C" fn heyheyhey(test2: &Test2, testyy: Testy) {
         println!("{}, {:?}", test2.c, testyy);
     }
+
 }
