@@ -14,6 +14,45 @@ enum class Testy {
   Stop,
 };
 
+struct Enum {
+  enum class Tag {
+    A,
+    B,
+  };
+
+  struct A_Body {
+    uint32_t _0;
+
+    A_Body(uint32_t const& _0)
+      : _0(_0)
+    {}
+
+  };
+
+  struct B_Body {
+    uint32_t _0;
+
+    B_Body(uint32_t const& _0)
+      : _0(_0)
+    {}
+
+  };
+
+  Tag tag;
+  union {
+    A_Body a;
+    B_Body b;
+  };
+
+  static Enum B(const uint32_t& b) {
+    return Enum{tag: Enum::Tag::B, b: b};
+  }
+
+  static Enum A(const uint32_t& a) {
+    return Enum{tag: Enum::Tag::A, a: a};
+  }
+};
+
 struct ArrayFlipper {
   double *data;
   uintptr_t len;
@@ -52,11 +91,15 @@ struct Test2 {
 
 extern "C" {
 
+void enum_test(const Enum *e);
+
 void flip(ArrayFlipper *self);
 
 void square(ArrayFlipper *self);
 
 void double_length(ArrayFlipper *self);
+
+void matrix_vec_product(ArrayFlipper *self);
 
 void hello(Test *self);
 

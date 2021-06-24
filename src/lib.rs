@@ -1,11 +1,28 @@
 #![feature(vec_into_raw_parts)]
 
 use std::ptr;
+use ndarray::prelude::*;
 
 #[repr(C)]
 pub struct Test {
     pub t: u32,
     pub a: u32,
+}
+
+
+#[repr(C)]
+pub enum Enum {
+    A(u32),
+    B(u32),
+} 
+
+
+#[no_mangle]
+pub extern "C" fn enum_test(e: &Enum) {
+    match e {
+        Enum::A(a) => println!("Got A and {}", a),
+        Enum::B(b) => println!("Got B and {}", b),
+    }
 }
 
 #[repr(C)]
@@ -40,9 +57,22 @@ impl ArrayFlipper {
 
     #[no_mangle]
     pub extern "C" fn double_length(&mut self) {
-        let s = unsafe { Vec::from_raw_parts(self.data, self.len, self.cap) };
-        let s: Vec<_> = s.iter().chain(s.iter()).collect();
+        let mut s = unsafe { Vec::from_raw_parts(self.data, self.len, self.cap) };
+        let mut i = 0;
+        while i < self.len {
+            s.push(s[i]);
+            i += 1;
+        }
+        self.len += i;
+        // let s: Vec<_> = s.iter().chain(s.iter()).collect();
         let _ = s.into_raw_parts();
+    }
+
+    #[no_mangle]
+    pub extern "C" fn matrix_vec_product(&mut self) {
+        let mut a = unsafe {ArrayViewMut::from_shape_ptr((3, 3), self.data) };
+        a.assign(&a.dot(&arr1(&[1., 2., 3.])));
+        self.len = 3;
     }
 }
 

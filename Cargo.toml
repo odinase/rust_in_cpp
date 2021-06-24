@@ -15,3 +15,4 @@ crate-type = ["dylib"]
 
 [dependencies]
 libc = "0.2"
+ndarray = "0.15"

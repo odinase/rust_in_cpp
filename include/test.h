@@ -49,10 +49,15 @@ class ArrayFlipper : public rust_interface::ArrayFlipper {
     }
 
     void double_length() {
-        align_data();
         cap *= 2;
         vec.reserve(cap);
+        align_data();
         rust_interface::double_length(this);
+    }
+
+    void matrix_vec_product() {
+        align_data();
+        rust_interface::matrix_vec_product(this);
     }
 };
 
