@@ -1,123 +1,76 @@
-#![feature(vec_into_raw_parts)]
-
-use std::ptr;
 use ndarray::prelude::*;
-
-#[repr(C)]
-pub struct Test {
-    pub t: u32,
-    pub a: u32,
-}
+use std::collections::VecDeque;
+use argmax::Argmax;
+use std::slice;
 
 
-#[repr(C)]
-pub enum Enum {
-    A(u32),
-    B(u32),
-} 
-
-
-#[no_mangle]
-pub extern "C" fn enum_test(e: &Enum) {
-    match e {
-        Enum::A(a) => println!("Got A and {}", a),
-        Enum::B(b) => println!("Got B and {}", b),
+#[cxx::bridge]
+mod ffi {
+    // Rust types and signatures exposed to C++.
+    extern "Rust" {
+        unsafe fn auction_ffi(problem: *const f64, m: usize, n: usize, eps: f64, max_iterations: usize, assignment: *mut i32);
     }
 }
 
-#[repr(C)]
-pub struct ArrayFlipper {
-    pub data: *mut f64,
-    pub len: usize,
-    pub cap: usize,
+unsafe fn auction_ffi(problem_ptr: *const f64, m: usize, n: usize, eps: f64, max_iterations: usize, assignment_ptr: *mut i32) {
+    let problem = ArrayView::from_shape_ptr((m, n), problem_ptr);
+    let assignment = auction(&problem, eps, max_iterations);
+    let assignment_slice = slice::from_raw_parts_mut(assignment_ptr, n);
+    for (k, a) in assignment.iter().enumerate() {
+        assignment_slice[k] = match *a {
+            Assignment::Assigned(a) => a as i32,
+            Assignment::Unassigned => -1,
+        };
+    }
 }
 
-impl ArrayFlipper {
-    pub fn new() -> Self {
-        ArrayFlipper {
-            data: ptr::null_mut(),
-            len: 0,
-            cap: 0,
-        }
+#[derive(Copy, Clone, Debug)]
+pub enum Assignment {
+    Assigned(usize),
+    Unassigned,
+}
+
+impl PartialEq<usize> for Assignment {
+    fn eq(&self, other: &usize) -> bool {
+        let this = match self {
+            Self::Assigned(a) => a,
+            Self::Unassigned => return false,
+        };
+        this == other
     }
+}
+
+pub fn auction(problem: &ArrayView2<f64>, eps: f64, max_iterations: usize) -> Vec<Assignment> {
+    use Assignment::{Assigned, Unassigned};
     
-    #[no_mangle]
-    pub extern "C" fn flip(&mut self) {
-        let s = unsafe { std::slice::from_raw_parts_mut(self.data, self.len) };
-        s.reverse();
-    }
+    let (m, n) = problem.dim();
+    let mut unassigned_queue: VecDeque<_> = (0..n).collect();
+    let mut assigned_tracks: Vec<Assignment> = vec![Unassigned; n];
+    let mut prices = vec![0f64; m];
 
-    #[no_mangle]
-    pub extern "C" fn square(&mut self) {
-        let s = unsafe { std::slice::from_raw_parts_mut(self.data, self.len) };
-        for ss in s {
-            *ss = (*ss)*(*ss);
+    let mut curr_iter = 0;
+    
+    while let Some(t_star) = unassigned_queue.pop_front() {
+        if curr_iter > max_iterations {
+            break;
         }
-    }
-
-    #[no_mangle]
-    pub extern "C" fn double_length(&mut self) {
-        let mut s = unsafe { Vec::from_raw_parts(self.data, self.len, self.cap) };
-        let mut i = 0;
-        while i < self.len {
-            s.push(s[i]);
-            i += 1;
+        let (i_star, val_max) = problem.column(t_star)
+            .into_iter()
+            .zip(prices.iter())
+            .map(|(reward, &price)| reward - price).argmax().unwrap();
+        let prev_owner = assigned_tracks.iter().position(|&e| e == i_star);
+        assigned_tracks[t_star] = Assigned(i_star);
+        
+        if let Some(prev_owner) = prev_owner {
+            // The item has a previous owner
+            assigned_tracks[prev_owner] = Unassigned;
+            unassigned_queue.push_back(prev_owner);
         }
-        self.len += i;
-        // let s: Vec<_> = s.iter().chain(s.iter()).collect();
-        let _ = s.into_raw_parts();
+        
+        let y = problem[(i_star, t_star)] - val_max;
+        prices[i_star] += y + eps;
+        curr_iter += 1;
     }
 
-    #[no_mangle]
-    pub extern "C" fn matrix_vec_product(&mut self) {
-        let mut a = unsafe {ArrayViewMut::from_shape_ptr((3, 3), self.data) };
-        a.assign(&a.dot(&arr1(&[1., 2., 3.])));
-        self.len = 3;
-    }
-}
-
-#[repr(C)]
-pub struct Test2 {
-    pub c: u32,
-}
-
-#[repr(C)]
-#[derive(Debug)]
-pub enum Testy {
-    Go,
-    Stop
-  }
-
-impl Test {
-    #[no_mangle]
-    pub extern "C" fn hello(&mut self) {
-        println!("got in {}", self.t);
-        self.t += 12;
-        println!("changed to {}", self.t);
-    }
-}
-
-mod cpp_interface {
-    use super::*;
-    // use libc::{c_double, size_t};
-    #[no_mangle]
-    pub extern "C" fn test_hello(test: &mut Test) {
-        test.hello();
-    }
-    #[no_mangle]
-    pub extern "C" fn heyo(test: &Test, arr: *mut f64, n: usize) -> f64 {
-        let v = unsafe { std::slice::from_raw_parts(arr, n) };
-        for (k, vv) in v.iter().enumerate() {
-            println!("{} element is {}", k, vv);
-        }
-        println!("t.a is {}", test.a);
-
-        return 1.2;
-    }
-
-    #[no_mangle]
-    pub extern "C" fn heyheyhey(test2: &Test2, testyy: Testy) {
-        println!("{}, {:?}", test2.c, testyy);
-    }
-
+    assigned_tracks
 }

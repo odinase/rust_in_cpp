@@ -43,14 +43,6 @@ struct Enum {
     A_Body a;
     B_Body b;
   };
-
-  static Enum B(const uint32_t& b) {
-    return Enum{tag: Enum::Tag::B, b: b};
-  }
-
-  static Enum A(const uint32_t& a) {
-    return Enum{tag: Enum::Tag::A, a: a};
-  }
 };
 
 struct ArrayFlipper {

@@ -1,8 +1,12 @@
-use std::env;
+// build.rs
 
 fn main() {
-    let crate_dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    cxx_build::bridge("src/lib.rs")  // returns a cc::Build
+        .file("hello.cpp")
+        .flag_if_supported("-std=c++17")
+        .compile("cxxbridge");
 
-    cbindgen::generate(crate_dir).unwrap()
-    .write_to_file("./include/rust_interface.h");
+    println!("cargo:rerun-if-changed=src/lib.rs");
+    println!("cargo:rerun-if-changed=hello.cpp");
+    // println!("cargo:rerun-if-changed=include/demo.h");
 }

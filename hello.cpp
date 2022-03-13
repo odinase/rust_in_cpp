@@ -1,43 +1,35 @@
-#include "test.h"
+#include "rust/cxx.h"
+#include "rust_in_cpp/src/lib.rs.h"
+#include <Eigen/Core>
+#include <limits>
 #include <iostream>
-#include <vector>
+
+
+using namespace std;
+
 
 int main()
 {
-    rust_interface::Enum e = rust_interface::Enum::B(8);
-    rust_interface::enum_test(&e);
-    rust_interface::Enum e2 = rust_interface::Enum::A(34);
-    rust_interface::enum_test(&e2);  
-    // ArrayFlipper a(9);
-    // std::cout << "Before flip\n";
-    // for (const auto& aa: a.vec) {
-    //     std::cout << aa << " ";
-    // }
-    // std::cout << std::endl;
-    // a.flip();
-    // std::cout << "After flip\n";
-    // for (const auto& aa: a.vec) {
-    //     std::cout << aa << " ";
-    // }
-    // std::cout << std::endl;
-    // a.square();
-    // std::cout << "After square\n";
-    // for (const auto& aa: a.vec) {
-    //     std::cout << aa << " ";
-    // }
-    // std::cout << std::endl;
-    // // a.double_length();
-    // // std::cout << "After double length\n";
-    // // double *d = a.data;
-    // // for (int i = 0; i < a.len; i++) {
-    // //     std::cout << *(d+i) << " ";
-    // // }
-    // // std::cout << std::endl;
-    // a.matrix_vec_product();
-    // std::cout << "After matrix vec product\n";
-    // double *d = a.data;
-    // for (int i = 0; i < a.len; i++) {
-    //     std::cout << *(d+i) << " ";
-    // }
-    // std::cout << std::endl;
+    constexpr double inf = std::numeric_limits<double>::infinity();
+
+    int m = 7;
+    int n = 3;
+
+    std::vector<int> assignment;
+    assignment.resize(n);
+
+    Eigen::MatrixXd A(m, n);
+    A << -5.69, 5.37, -inf,
+        -inf, -3.8, 6.58,
+        4.78, -inf, -inf,
+        -inf, 5.36, -inf,
+        -0.46, -inf, -inf,
+        -inf, -0.52, -inf,
+        -inf, -inf, -0.60;
+
+    auction_ffi(A.data(), m, n, 1e-3, 10'000, assignment.data());
+
+    for (int t = 0; t < n; t++) {
+        cout << "target " << t << " with measurement " << assignment[t] << "\n";
+    }
 }
